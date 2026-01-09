@@ -1,6 +1,15 @@
 import axios from 'axios';
 
+const getApiBaseUrl = () => {
+    if (import.meta.env.MODE === "development") return "http://localhost:5001/api";
+
+    const base = import.meta.env.VITE_API_URL;
+    if (!base) return "/api";
+
+    return base.replace(/\/$/, "") + "/api";
+};
+
 export const axiosInstance = axios.create({
-    baseURL: import.meta.env.MODE === "development" ? "http://localhost:5001/api" : import.meta.env.VITE_API_URL + "/api",
+    baseURL: getApiBaseUrl(),
     withCredentials: true,
 });
