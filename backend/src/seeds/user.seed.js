@@ -1,8 +1,12 @@
-import { config } from "dotenv";
+import dotenv from "dotenv";
+import path from "path";
 import { connectDB } from "../lib/db.js";
 import User from "../models/user.model.js";
 
-config();
+const __dirname = path.resolve();
+
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 const seedUsers = [
   // Female Users
