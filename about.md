@@ -9,23 +9,55 @@
 
 ## 2. Technology Stack & Libraries
 
-### Backend (Node.js + Express)
+### Backend Dependencies (Node.js + Express)
 
-*   **`express`**: The web framework that handles API routes (`/api/auth`, `/api/messages`).
-*   **`mongoose`**: Connects to your MongoDB database to save users and messages.
-*   **`socket.io`**: Enables real-time, two-way communication.
-*   **`jsonwebtoken` (JWT)**: Creates secure "passes" so users stay logged in.
-*   **`cookie-parser`**: Reads these JWTs from browser cookies.
-*   **`bcryptjs`**: Scrambles passwords so they are stored securely (e.g., "password123" becomes `$2a$10$Eix...`).
-*   **`cloudinary`**: Stores user profile pictures and image attachments in the cloud.
+These are the libraries used in the `backend/package.json` file.
 
-### Frontend (React + Vite)
+*   **`express`**:
+    *   **Why**: It is the most popular web framework for Node.js. It simplifies the process of creating API routes (endpoints), handling HTTP requests/responses, and managing middleware.
+*   **`mongoose`**:
+    *   **Why**: An ODM (Object Data Modeling) library for MongoDB. It allows us to define schemas for our data (like `User` and `Message` models) and interact with the database using cleaner JavaScript syntax instead of raw database queries.
+*   **`socket.io`**:
+    *   **Why**: Enables real-time, bidirectional communication between the web client and the server. This is the core engine behind the instant messaging features.
+*   **`jsonwebtoken` (JWT)**:
+    *   **Why**: Used for securely transmitting information between parties as a JSON object. We use it to create "access tokens" (cookies) that prove a user is logged in.
+*   **`bcryptjs`**:
+    *   **Why**: A library to hash passwords. We never store plain text passwords in the database; `bcryptjs` turns "password123" into a secure, irreversible string.
+*   **`cookie-parser`**:
+    *   **Why**: Express doesn't read cookies by default. This middleware parses the `Cookie` header and populates `req.cookies`, allowing us to easily read the JWT token.
+*   **`cors`**:
+    *   **Why**: Stands for Cross-Origin Resource Sharing. It is a security feature that allows our frontend (running on one domain/port) to talk to our backend (running on a different domain/port).
+*   **`dotenv`**:
+    *   **Why**: Loads environment variables from a `.env` file into `process.env`. This keeps secrets like API keys and database URLs out of the source code.
+*   **`cloudinary`**:
+    *   **Why**: A service for storing images in the cloud. We use it to upload and host user profile pictures and image attachments.
+*   **`nodemon` (Dev Dependency)**:
+    *   **Why**: A utility that automatically restarts the Node.js application when file changes in the directory are detected, speeding up development.
 
-*   **`react-router-dom`**: Handles navigation (switching between Login, Home, Profile pages).
-*   **`zustand`**: Manages global state (keeping track of "Who am I?", "Who is online?", "What are my messages?").
-*   **`axios`**: The HTTP client used to make requests to the backend (like a better version of `fetch`).
-*   **`socket.io-client`**: The browser-side library that listens for real-time events from the server.
-*   **`daisyui` + `tailwindcss`**: Styling libraries for building beautiful, responsive UI components quickly.
+### Frontend Dependencies (React + Vite)
+
+These are the libraries used in the `frontend/package.json` file.
+
+*   **`react` / `react-dom`**:
+    *   **Why**: The core library for building the user interface. It lets us create reusable components (like buttons, chat bubbles) and manage the view layer.
+*   **`react-router-dom`**:
+    *   **Why**: Enables client-side routing. It allows us to navigate between pages (Login, Signup, Home) without reloading the browser.
+*   **`zustand`**:
+    *   **Why**: A small, fast, and scalable state management solution. We use it to store global data like the current user, list of messages, and theme preferences so they can be accessed from any component.
+*   **`axios`**:
+    *   **Why**: A promise-based HTTP client. We use it to make requests to our backend API (e.g., `axios.post('/login')`). It handles things like JSON transformation and error handling better than the native `fetch` API.
+*   **`socket.io-client`**:
+    *   **Why**: The client-side version of Socket.IO. It connects to the backend socket server and listens for events like "newMessage" or "getOnlineUsers".
+*   **`react-hot-toast`**:
+    *   **Why**: Adds beautiful notifications to the app. We use it to show success messages ("Logged in successfully") or errors ("Invalid password").
+*   **`lucide-react`**:
+    *   **Why**: A collection of beautiful SVG icons (like the user icon, settings gear, send arrow) used throughout the UI.
+*   **`tailwindcss` (Dev Dependency)**:
+    *   **Why**: A utility-first CSS framework. It allows us to style components directly in the HTML/JSX (e.g., `className="flex items-center justify-center"`) without writing separate CSS files.
+*   **`daisyui` (Dev Dependency)**:
+    *   **Why**: A component library for Tailwind CSS. It gives us pre-styled components like buttons, inputs, and modals, saving us time on design.
+*   **`vite` (Dev Dependency)**:
+    *   **Why**: The build tool and development server. It is extremely fast and optimized for modern web development, replacing older tools like Webpack.
 
 ## 3. Backend Architecture (The "Brain")
 
