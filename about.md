@@ -150,3 +150,88 @@ Here is how data travels from one user to another:
     *   `useThemeStore.js`: UI theme state.
 *   **`App.jsx`**: The root React component handling routing and layout.
 *   **`main.jsx`**: The entry point that mounts the React app to the DOM.
+
+## 8. Detailed Route & Chat Flows
+
+### 8.1 API Route Flow
+This section explains how a request travels from the User to the Database and back.
+
+#### **Authentication Routes (`/api/auth`)**
+1.  **POST `/api/auth/signup`**
+    *   **Frontend**: User enters Name, Email, Password -> Hits Signup button.
+    *   **Route**: `auth.route.js` -> `router.post("/signup", signup)`
+    *   **Controller**: `auth.controller.js` -> `signup()`
+        *   Checks if email exists.
+        *   Hashes password with `bcryptjs`.
+        *   Creates new `User` in MongoDB.
+        *   Generates JWT Token -> Sets it as an `httpOnly` cookie.
+    *   **Response**: Returns user data (without password).
+
+2.  **POST `/api/auth/login`**
+    *   **Frontend**: User enters Email, Password -> Hits Login button.
+    *   **Route**: `auth.route.js` -> `router.post("/login", login)`
+    *   **Controller**: `auth.controller.js` -> `login()`
+        *   Finds user by email.
+        *   Compares hashed passwords.
+        *   Generates new JWT Token -> Sets cookie.
+    *   **Response**: Returns user data + triggers Socket connection.
+
+3.  **GET `/api/auth/check`** (Session Persistence)
+    *   **Frontend**: App loads (refresh/open). `useEffect` calls `checkAuth()`.
+    *   **Route**: `auth.route.js` -> `router.get("/check", protectRoute, checkAuth)`
+    *   **Middleware**: `auth.middleware.js` -> `protectRoute()`
+        *   Reads `jwt` cookie.
+        *   Verifies token signature.
+        *   Attaches `req.user` to request object.
+    *   **Controller**: Returns `req.user`.
+
+#### **Message Routes (`/api/messages`)**
+*   **Protected**: All these routes use `protectRoute` middleware.
+
+1.  **GET `/api/messages/users`** (Sidebar)
+    *   **Frontend**: `useChatStore.getUsers()` calls this on load.
+    *   **Controller**: `message.controller.js` -> `getUsersForSidebar()`
+    *   **Logic**: `User.find({ _id: { $ne: loggedInUserId } })` (Find all users except me).
+
+2.  **GET `/api/messages/:id`** (Chat History)
+    *   **Frontend**: User clicks a contact in sidebar.
+    *   **Controller**: `message.controller.js` -> `getMessages()`
+    *   **Logic**: Find messages where `(sender=me AND receiver=you) OR (sender=you AND receiver=me)`.
+
+3.  **POST `/api/messages/send/:id`** (Sending)
+    *   **Frontend**: User types message + Hits Send.
+    *   **Controller**: `message.controller.js` -> `sendMessage()`
+    *   **Logic**:
+        *   If image exists -> Upload to Cloudinary first.
+        *   Create new `Message` document in MongoDB.
+        *   **Socket Step**: Emit `newMessage` event to receiver's socket ID.
+    *   **Response**: Returns the saved message object.
+
+---
+
+### 8.2 Real-Time Chat Flow (Socket.IO)
+This explains how messages appear instantly without refreshing.
+
+**Step 1: Connection**
+*   **User Logs In**: Frontend `useAuthStore` calls `connectSocket()`.
+*   **Handshake**: Client connects to Backend URL.
+*   **Query Param**: Passes `userId` in the connection URL (`?userId=123`).
+*   **Server (`socket.js`)**:
+    *   Catches connection event.
+    *   Stores mapping: `userSocketMap[userId] = socket.id`.
+    *   Emits `getOnlineUsers` event to **ALL** clients.
+
+**Step 2: Sending a Message**
+*   **Sender**: Calls HTTP API `/api/messages/send/:id`.
+*   **Server (Controller)**:
+    *   Saves message to DB (Persistence).
+    *   Looks up Receiver's socket ID: `const socketId = getReceiverSocketId(receiverId)`.
+    *   **If Receiver is Online**: `io.to(socketId).emit("newMessage", message)`.
+
+**Step 3: Receiving a Message**
+*   **Receiver (Frontend)**:
+    *   `useChatStore` is listening: `socket.on("newMessage", callback)`.
+    *   **Event Triggered**: The callback runs with the new message data.
+    *   **State Update**: The store checks `if (message.senderId === selectedUser._id)`.
+        *   If TRUE: Appends message to `messages` array.
+    *   **UI Update**: React re-renders `<ChatContainer />`, displaying the new bubble.
