@@ -5,12 +5,13 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
+import { Check, CheckCheck } from "lucide-react";
 
 
 const ChatContainer = () => {
-    const {messages,getMessages,isMessagesLoading,selectedUser,subscribeToMessages,unsubscribeFromMessages} = useChatStore();
+    const {messages,getMessages,isMessagesLoading,selectedUser,subscribeToMessages,unsubscribeFromMessages, isTyping} = useChatStore();
 
-    const { authUser }=useAuthStore();
+    const { authUser, socket }=useAuthStore();
 
     const messageEndRef = useRef(null);
 
@@ -21,11 +22,17 @@ const ChatContainer = () => {
         return ()=> unsubscribeFromMessages();
     },[selectedUser._id,getMessages,subscribeToMessages,unsubscribeFromMessages])
 
+    useEffect(() => {
+        if (socket && selectedUser) {
+            socket.emit("markMessagesAsSeen", { senderId: selectedUser._id });
+        }
+    }, [selectedUser, socket, messages]); // Trigger on mount or when new messages arrive
+
     useEffect(()=>{
         if(messageEndRef.current && messages){
             messageEndRef.current.scrollIntoView({behavior:"smooth"})
         }
-    },[messages])
+    },[messages, isTyping])
 
     if(isMessagesLoading) {
         return (
@@ -74,8 +81,47 @@ const ChatContainer = () => {
                         )}
                         {message.text && <p>{message.text}</p>}
                     </div>
+
+                    {message.senderId === authUser._id && (
+                        <div className="chat-footer opacity-50 text-xs flex gap-1 items-center mt-1">
+                            {message.status === "seen" ? (
+                                <>
+                                    <span className="text-primary">Seen</span>
+                                    <CheckCheck className="size-3 text-primary" />
+                                </>
+                            ) : message.status === "delivered" ? (
+                                <>
+                                    <span>Delivered</span>
+                                    <CheckCheck className="size-3" />
+                                </>
+                            ) : (
+                                <>
+                                    <span>Sent</span>
+                                    <Check className="size-3" />
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
             ))}
+
+            {isTyping && (
+                <div className="chat chat-start">
+                    <div className="chat-image avatar">
+                        <div className="size-10 rounded-full border">
+                            <img
+                                src={selectedUser.profilePic || "/avtr.jpg"}
+                                alt="profile pic"
+                            />
+                        </div>
+                    </div>
+                    <div className="chat-bubble italic text-zinc-400 text-sm">
+                        Typing...
+                    </div>
+                </div>
+            )}
+            
+            <div ref={messageEndRef}></div>
         </div>
 
         <MessageInput/>

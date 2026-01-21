@@ -1,6 +1,8 @@
 import {Server} from 'socket.io';
 import http from 'http';
 import express from 'express';
+import Message from '../models/message.model.js';
+
 
 
 const app = express();
@@ -52,7 +54,37 @@ io.on('connection', (socket) => {
     //io.emit is used to send events to all the connected clients
     io.emit("getOnlineUsers",Object.keys(userSocketMap));
 
+    socket.on("typing", ({ receiverId }) => {
+        const receiverSocketId = getReceiverSocketId(receiverId);
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("typing", { senderId: userId });
+        }
+    });
 
+    socket.on("stopTyping", ({ receiverId }) => {
+        const receiverSocketId = getReceiverSocketId(receiverId);
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("stopTyping", { senderId: userId });
+        }
+    });
+
+    socket.on("markMessagesAsSeen", async ({ senderId }) => {
+        try {
+            // Update in DB
+            await Message.updateMany(
+                { senderId: senderId, receiverId: userId, status: { $ne: "seen" } },
+                { $set: { status: "seen" } }
+            );
+
+            // Notify sender
+            const senderSocketId = getReceiverSocketId(senderId);
+            if (senderSocketId) {
+                io.to(senderSocketId).emit("messagesSeen", { receiverId: userId });
+            }
+        } catch (error) {
+            console.log("Error in markMessagesAsSeen: ", error);
+        }
+    });
 
     socket.on("disconnect",()=>{
         console.log(" a user disconnected",socket.id);

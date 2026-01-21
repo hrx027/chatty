@@ -98,43 +98,32 @@ This is the main layout.
     *   If **No**: Redirects to `<LoginPage />`.
 *   **Initialization**: Calls `checkAuth()` on load to see if a session exists.
 
-### State Management (Zustand)
+## 5. Feature Flows (New)
 
-As explained before, this is the "memory" of your frontend.
+### 1. Real-Time Chat Flow
+1.  **Sending**: User types a message in `MessageInput.jsx` and clicks Send.
+2.  **API Call**: `sendMessage` in `useChatStore.js` sends an HTTP POST request to `/api/messages/send/:id`.
+3.  **Database**: Backend saves the message to MongoDB with `status: "sent"`.
+4.  **Socket Emit**: Backend finds the receiver's `socketId` and emits `newMessage` only to them.
+5.  **UI Update**: Frontend (Receiver) listens for `newMessage` and updates the `messages` array instantly.
 
-*   `useAuthStore`: "Am I logged in? Who is online?"
-*   `useChatStore`: "Who am I talking to? What are our messages?"
-*   `useThemeStore`: "Dark mode or Light mode?"
+### 2. Typing Status Flow
+1.  **Trigger**: User types in `MessageInput.jsx`.
+2.  **Socket Emit**: Frontend emits `typing` event to backend with `receiverId`.
+3.  **Backend Relay**: Backend finds receiver's `socketId` and emits `typing` to them.
+4.  **UI Update**: Receiver's `ChatContainer.jsx` sees `isTyping: true` and shows "Typing..." indicator.
+5.  **Stop**: After 3 seconds of no typing, frontend emits `stopTyping`, and indicator disappears.
 
-### API Layer (`frontend/src/lib/axios.js`)
+### 3. Read Receipts (Seen/Delivered) Flow
+1.  **Sent**: Default status when a message is created.
+2.  **Delivered**: (Future implementation) Could be triggered when receiver's socket receives the message.
+3.  **Seen**: 
+    *   When a user opens a chat, frontend emits `markMessagesAsSeen` via socket.
+    *   Backend updates all messages from that sender to `status: "seen"` in DB.
+    *   Backend emits `messagesSeen` back to the original sender.
+    *   Sender's UI updates the checkmarks to blue/primary color.
 
-A pre-configured tool for making requests.
-
-*   It knows the backend URL (`baseURL`).
-*   `withCredentials: true`: This is CRITICAL. It tells the browser, "Always send the HTTP-Only cookie with every request." Without this, the backend wouldn't know who you are.
-
-## 5. The Flow: "Sending a Message"
-
-Here is how data travels from one user to another:
-
-1.  **User Types**: You type "Hello" and hit send in the frontend.
-2.  **API Call**: `useChatStore` calls `axiosInstance.post('/messages/send/:id', { text: "Hello" })`.
-3.  **Backend Processing** (`message.controller.js`):
-    *   Server receives the request.
-    *   Saves the message to MongoDB.
-    *   **Real-Time Magic**: It looks up the receiver's `socketId` using `getReceiverSocketId(receiverId)`.
-    *   `io.to(receiverSocketId).emit("newMessage", newMessage)`: Sends the data *directly* to that specific user's open browser tab.
-4.  **Frontend Update**:
-    *   The receiver's browser (listening via `useChatStore.subscribeToMessages`) hears the `newMessage` event.
-    *   It instantly pushes the new message into the `messages` array.
-    *   React re-renders the screen, and the message pops up.
-
-## 6. Deployment Setup (Vercel & Render)
-
-*   **Frontend (Vercel)**: Serves the React static files. It needs `VITE_API_URL` to know where the backend lives.
-*   **Backend (Render)**: Runs the Node.js server. It needs `CLIENT_URL` to know which frontend is allowed to connect (CORS security).
-
-## 7. Folder Structure Details
+## 6. Folder Structure Details
 
 ### Backend (`backend/src/`)
 
