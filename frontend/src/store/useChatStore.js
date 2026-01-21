@@ -55,8 +55,13 @@ export const useChatStore = create((set,get) => ({
       const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
       if (!isMessageSentFromSelectedUser) return;
 
+      // Check for duplicates
+      const currentMessages = get().messages;
+      const isDuplicate = currentMessages.some(msg => msg._id === newMessage._id);
+      if (isDuplicate) return;
+
       set({
-        messages: [...get().messages, newMessage],
+        messages: [...currentMessages, newMessage],
       });
     });
 
