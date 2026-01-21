@@ -95,8 +95,8 @@ export const updateProfile = async (req,res) =>{
 
         res.status(200).json(updatedUser);
     } catch (error) {
-        console.log("Error in updateProfile: ",error.message)
-        res.status(500).json({message: 'Something went wrong'})
+        console.log("Error in updateProfile: ",error)
+        res.status(500).json({message: 'Something went wrong', error: error.message})
     }
 }
 
