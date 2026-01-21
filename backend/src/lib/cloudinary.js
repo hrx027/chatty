@@ -28,6 +28,11 @@ console.log("Cloud Name:", cloud_name || "MISSING");
 console.log("API Key:", api_key ? `Present (length: ${api_key.length})` : "MISSING");
 console.log("API Secret:", api_secret ? `Present (length: ${api_secret.length})` : "MISSING");
 
+// If CLOUDINARY_URL is set, it might override manual config. Log it.
+if (process.env.CLOUDINARY_URL) {
+    console.warn("WARNING: CLOUDINARY_URL environment variable is set. This might override the manual configuration.");
+}
+
 cloudinary.config({
     cloud_name,
     api_key,
