@@ -21,16 +21,33 @@ const PORT = process.env.PORT || 5001
 
 app.use(express.json())
 app.use(cookieParser())
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174"
+];
+
+if (process.env.CLIENT_URL) {
+    allowedOrigins.push(process.env.CLIENT_URL.replace(/\/$/, ""));
+}
+
 app.use(cors({
-    origin: (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, ""),
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+            callback(null, true);
+        } else {
+            console.log("Blocked by CORS:", origin); // Debug log for troubleshooting
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }))
 
-app.use((req, res, next) => {
-    console.log(`Request from origin: ${req.headers.origin}`);
-    console.log(`Cookies:`, req.cookies);
-    next();
-});
+
 
 app.use("/api/auth",authRoutes)
 app.use("/api/messages",messageRoutes)
