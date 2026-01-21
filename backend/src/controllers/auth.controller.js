@@ -89,18 +89,13 @@ export const updateProfile = async (req,res) =>{
             return res.status(400).json({message: 'Please select an image'})
         }
 
-        console.log("Attempting Cloudinary upload...");
         const uploadResponse = await cloudinary.uploader.upload(profilePic);
-        console.log("Cloudinary upload success:", uploadResponse.secure_url);
 
         const updatedUser = await User.findByIdAndUpdate(userId,{profilePic: uploadResponse.secure_url},{new: true});
 
         res.status(200).json(updatedUser);
     } catch (error) {
-        console.error("Error in updateProfile:", error);
-        if (error.http_code) {
-             console.error("Cloudinary HTTP Code:", error.http_code);
-        }
+        console.log("Error in updateProfile: ",error)
         res.status(500).json({message: 'Something went wrong', error: error.message})
     }
 }
