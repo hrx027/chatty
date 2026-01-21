@@ -19,7 +19,7 @@ dotenv.config({ path: path.join(__dirname, '.env') })
 
 const PORT = process.env.PORT || 5001
 
-app.use(express.json())
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser())
 const allowedOrigins = [
     "http://localhost:5173",
