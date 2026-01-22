@@ -105,6 +105,10 @@ export const updateProfile = async (req,res) =>{
       
       let secure_url = "";
       if(profilePic){
+        if(!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET){
+             console.log("Cloudinary credentials missing");
+             return res.status(500).json({message: "Server configuration error: Cloudinary credentials missing"});
+        }
         console.log("Profile pic length:", profilePic.length);
         const uploadResponse = await cloudinary.uploader.upload(profilePic);
         console.log("Cloudinary upload success:", uploadResponse.secure_url);
