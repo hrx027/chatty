@@ -56,6 +56,7 @@ export const useAuthStore = create((set,get) => ({
         try {
             const res = await axiosInstance.post('/auth/login', data);
             set({authUser: res.data});
+            localStorage.setItem("jwt", res.data.token);
             toast.success("Logged in successfully");
             get().connectSocket()
         } catch (error) {
