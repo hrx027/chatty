@@ -98,17 +98,20 @@ export const updateProfile = async (req,res) =>{
       const {profilePic} = req.body;
       const userId = req.user._id;
 
-      if(!profilePic){
+      if(!profilePic && profilePic !== ""){
         console.log("No profile pic provided");
         return res.status(400).json({message: 'Please select an image'})
       }
       
-      console.log("Profile pic length:", profilePic.length);
+      let secure_url = "";
+      if(profilePic){
+        console.log("Profile pic length:", profilePic.length);
+        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+        console.log("Cloudinary upload success:", uploadResponse.secure_url);
+        secure_url = uploadResponse.secure_url;
+      }
 
-      const uploadResponse = await cloudinary.uploader.upload(profilePic);
-      console.log("Cloudinary upload success:", uploadResponse.secure_url);
-
-      const updatedUser = await User.findByIdAndUpdate(userId,{profilePic: uploadResponse.secure_url},{new: true});
+      const updatedUser = await User.findByIdAndUpdate(userId,{profilePic: secure_url},{new: true});
 
       res.status(200).json(updatedUser);
     } catch (error) {
