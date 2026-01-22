@@ -22,6 +22,9 @@ const PORT = process.env.PORT || 5001
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser())
+// Trust proxy is required for secure cookies to work correctly behind a load balancer (like Render/Vercel)
+app.set("trust proxy", 1);
+
 const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:5174",
