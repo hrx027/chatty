@@ -37,6 +37,7 @@ const io = new Server(server, {
             }
         },
         credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization']
     },
 });
 
