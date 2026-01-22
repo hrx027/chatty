@@ -64,15 +64,29 @@ const Sidebar = () => {
                   rounded-full ring-2 ring-zinc-900"
                 />
               )}
+              {/* Mobile Badge */}
+              {user.unreadCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 size-4 bg-primary text-[10px] text-primary-content flex items-center justify-center rounded-full lg:hidden"
+                >
+                  {user.unreadCount}
+                </span>
+              )}
             </div>
 
             {/* User info - only visible on larger screens */}
-            <div className="hidden lg:block text-left min-w-0">
+            <div className="hidden lg:block text-left min-w-0 flex-1">
               <div className="font-medium truncate">{user.fullName}</div>
               <div className="text-sm text-zinc-400">
                 {onlineUsers.includes(user._id) ? "Online" : "Offline"}
               </div>
             </div>
+            
+            {user.unreadCount > 0 && (
+                <div className="hidden lg:block badge badge-sm badge-primary ml-auto">
+                    {user.unreadCount}
+                </div>
+            )}
           </button>
         ))}
 

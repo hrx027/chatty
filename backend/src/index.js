@@ -38,7 +38,10 @@ app.use(cors({
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
-        if (allowedOrigins.includes(origin) || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+        // Allow local network IPs for mobile testing (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+        const isLocalNetwork = /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(origin);
+
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes(origin.replace(/\/$/, "")) || isLocalNetwork) {
             callback(null, true);
         } else {
             console.log("Blocked by CORS:", origin); // Debug log for troubleshooting

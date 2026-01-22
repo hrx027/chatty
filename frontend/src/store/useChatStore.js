@@ -10,6 +10,21 @@ export const useChatStore = create((set,get) => ({
   isUsersLoading: false,
   isMessagesLoading: false,
   isTyping: false,
+  replyingTo: null,
+
+  setReplyingTo: (message) => set({ replyingTo: message }),
+
+  setSelectedUser: (selectedUser) => {
+    set({ selectedUser });
+    // Reset unread count for selected user
+    if (selectedUser) {
+        set(state => ({
+            users: state.users.map(user => 
+                user._id === selectedUser._id ? { ...user, unreadCount: 0 } : user
+            )
+        }));
+    }
+  },
 
   getUsers: async () => {
     set({ isUsersLoading: true });
@@ -36,49 +51,79 @@ export const useChatStore = create((set,get) => ({
   },
 
   sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
+    const { selectedUser, messages, replyingTo } = get();
     try {
-      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
-      set({ messages: [...messages, res.data] });
+      const payload = { ...messageData };
+      if (replyingTo) {
+        payload.replyTo = replyingTo._id;
+      }
+      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, payload);
+      set({ messages: [...messages, res.data], replyingTo: null });
     } catch (error) {
       toast.error(error.response.data.message);
     }
   },
 
+  markMessagesAsSeen: async (userId) => {
+    try {
+      await axiosInstance.put(`/messages/mark-seen/${userId}`);
+      // Optimistically update local messages if we are viewing them?
+      // Actually, if we are viewing them, they are ours (received), so status update doesn't matter much for us visually
+      // UNLESS we want to show "seen" status for received messages too (which is rare).
+      // But we should update the unread count locally (which we already do in setSelectedUser).
+    } catch (error) {
+      console.error("Failed to mark messages as seen:", error);
+    }
+  },
+
   subscribeToMessages: () => {
     const { selectedUser } = get();
-    if (!selectedUser) return;
+    // if (!selectedUser) return; // REMOVED: We need to listen for messages even if no user selected for unread counts
 
     const socket = useAuthStore.getState().socket;
 
     socket.on("newMessage", (newMessage) => {
-      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
-      if (!isMessageSentFromSelectedUser) return;
-
-      // Check for duplicates
-      const currentMessages = get().messages;
-      const isDuplicate = currentMessages.some(msg => msg._id === newMessage._id);
-      if (isDuplicate) return;
-
-      set({
-        messages: [...currentMessages, newMessage],
-      });
+      const isMessageSentFromSelectedUser = selectedUser && newMessage.senderId === selectedUser._id;
+      
+      // If chat is open with sender, append message
+      if (isMessageSentFromSelectedUser) {
+        // Check for duplicates
+        const currentMessages = get().messages;
+        const isDuplicate = currentMessages.some(msg => msg._id === newMessage._id);
+        if (!isDuplicate) {
+             set({
+               messages: [...currentMessages, newMessage],
+             });
+        }
+      } else {
+        // Increment unread count for the sender
+        set(state => ({
+            users: state.users.map(user => 
+                user._id === newMessage.senderId 
+                ? { ...user, unreadCount: (user.unreadCount || 0) + 1 } 
+                : user
+            )
+        }));
+        
+        // Optional: Show toast notification if not on chat screen
+        toast.success(`New message from ${newMessage.senderId}`); // Using ID for now, ideally need name lookup or populate
+      }
     });
 
     socket.on("typing", ({ senderId }) => {
-      if (senderId === selectedUser._id) {
+      if (selectedUser && senderId === selectedUser._id) {
         set({ isTyping: true });
       }
     });
 
     socket.on("stopTyping", ({ senderId }) => {
-      if (senderId === selectedUser._id) {
+      if (selectedUser && senderId === selectedUser._id) {
         set({ isTyping: false });
       }
     });
 
     socket.on("messagesSeen", ({ receiverId }) => {
-      if (selectedUser._id === receiverId) {
+      if (selectedUser && selectedUser._id === receiverId) {
         set({
           messages: get().messages.map((msg) => ({ ...msg, status: "seen" })),
         });
@@ -93,6 +138,4 @@ export const useChatStore = create((set,get) => ({
     socket.off("stopTyping");
     socket.off("messagesSeen");
   },
-
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
 }));

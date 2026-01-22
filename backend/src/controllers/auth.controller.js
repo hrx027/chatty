@@ -82,23 +82,28 @@ export const logout = async (req,res) =>{
 
 export const updateProfile = async (req,res) =>{
     try {
-        const {profilePic} = req.body;
-        const userId = req.user._id;
+      console.log("Update profile request received for user:", req.user._id);
+      const {profilePic} = req.body;
+      const userId = req.user._id;
 
-        if(!profilePic){
-            return res.status(400).json({message: 'Please select an image'})
-        }
+      if(!profilePic){
+        console.log("No profile pic provided");
+        return res.status(400).json({message: 'Please select an image'})
+      }
+      
+      console.log("Profile pic length:", profilePic.length);
 
-        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      console.log("Cloudinary upload success:", uploadResponse.secure_url);
 
-        const updatedUser = await User.findByIdAndUpdate(userId,{profilePic: uploadResponse.secure_url},{new: true});
+      const updatedUser = await User.findByIdAndUpdate(userId,{profilePic: uploadResponse.secure_url},{new: true});
 
-        res.status(200).json(updatedUser);
+      res.status(200).json(updatedUser);
     } catch (error) {
-        console.log("Error in updateProfile: ",error)
-        res.status(500).json({message: 'Something went wrong', error: error.message})
+      console.log("Error in updateProfile: ",error)
+      res.status(500).json({message: 'Something went wrong', error: error.message})
     }
-}
+  }
 
 export const checkAuth = async (req,res) =>{
     try {

@@ -8,7 +8,7 @@ const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const { sendMessage, replyingTo, setReplyingTo } = useChatStore();
   const { socket } = useAuthStore();
   const typingTimeoutRef = useRef(null);
 
@@ -29,6 +29,10 @@ const MessageInput = () => {
   const removeImage = () => {
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeReply = () => {
+    setReplyingTo(null);
   };
 
   const handleInputChange = (e) => {
@@ -72,6 +76,18 @@ const MessageInput = () => {
 
   return (
     <div className="p-4 w-full">
+      {replyingTo && (
+        <div className="mb-2 p-2 bg-base-200 rounded-lg flex items-center justify-between border-l-4 border-primary">
+          <div className="flex-1 text-sm overflow-hidden">
+             <p className="text-xs text-primary font-bold">Replying to...</p>
+             <p className="truncate text-zinc-400">{replyingTo.text || "Image"}</p>
+          </div>
+          <button onClick={removeReply} className="btn btn-ghost btn-xs btn-circle">
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
